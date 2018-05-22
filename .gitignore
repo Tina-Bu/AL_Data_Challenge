@@ -1,0 +1,12 @@
+# Jupyter Notebook
+.DS_Store
+.ipynb_checkpoints/
+
+# Data Folder
+Data/
+
+# Papers
+Paper/
+
+# CRNN code
+crnn/
