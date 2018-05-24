@@ -3,6 +3,7 @@ import pickle # cPickle not available in Python 3
 from collections import defaultdict
 import sys, re
 import pandas as pd
+from gensim.models import KeyedVectors
 
 def build_pos_neg_data(path_to_file, filename):
     '''
@@ -10,8 +11,8 @@ def build_pos_neg_data(path_to_file, filename):
     '''
     file = path_to_file + filename
     all_data = pd.read_csv(file)
-    pos = all_data[all_data['DETRACTOR'] == 0]
-    neg = all_data[all_data['DETRACTOR'] == 1]
+    pos = all_data[all_data['DETRACTOR'] == 1]
+    neg = all_data[all_data['DETRACTOR'] == 0]
     return pos, neg
 
 def build_data_cv(data_folder, cv = 10, clean_string = True):
@@ -37,7 +38,7 @@ def build_data_cv(data_folder, cv = 10, clean_string = True):
             for word in words:
                 vocab[word] += 1
             # here y = 0 means positive
-            datum  = {"y": 0,
+            datum  = {"y": 1,
                       "text": orig_rev,
                       "num_words": len(orig_rev.split()),
                       "split": np.random.randint(0, cv)}
@@ -57,7 +58,7 @@ def build_data_cv(data_folder, cv = 10, clean_string = True):
             for word in words:
                 vocab[word] += 1
             # here y = 1 means negative
-            datum  = {"y": 1,
+            datum  = {"y": 0,
                       "text": orig_rev,
                       "num_words": len(orig_rev.split()),
                       "split": np.random.randint(0,cv)}
@@ -88,7 +89,7 @@ def load_bin_vec(fname, vocab):
         header = f.readline()
         vocab_size, layer1_size = map(int, header.split())
         binary_len = np.dtype('float32').itemsize * layer1_size
-        for line in xrange(vocab_size):
+        for line in range(vocab_size):
             word = []
             while True:
                 ch = f.read(1)
@@ -102,6 +103,11 @@ def load_bin_vec(fname, vocab):
             else:
                 f.read(binary_len)
     return word_vecs
+
+# def load_bin_vec(fname, vocab):
+#     # Load pretrained model (since intermediate data is not included, the model cannot be refined with additional data)
+#     model = Word2Vec.load_word2vec_format(fname, binary=True)
+#     return model
 
 def add_unknown_words(word_vecs, vocab, min_df=1, k=300):
     """
@@ -141,35 +147,36 @@ def clean_str_sst(string):
     return string.strip().lower()
 
 if __name__=="__main__":
-    w2v_file = sys.argv[1]
     
+    w2v_file = sys.argv[1]
+    # w2v_file = 'GoogleNews-vectors-negative300.bin'
     path_to_file = '/Users/tina.bu/Documents/Data_Challenge/Data/'
     filename = 'train.csv'
     data_folder = ["./Data/pos.txt",
                    "./Data/neg.txt"]
     
-    print("loading data...")
-    print("Spliting positive & negative examples")
+    print("-loading data...")
+    print("--Spliting positive & negative examples")
     pos, neg = build_pos_neg_data(path_to_file, filename)
-    print("Saving positie & negatie examples in separate files")
+    print("--Saving positie & negatie examples in separate files")
     pos['verbatim'].to_csv(r'./Data/pos.txt', header=None, index=None, sep=' ', mode='a')
     neg['verbatim'].to_csv(r'./Data/neg.txt', header=None, index=None, sep=' ', mode='a')
-    print("Building cross validation set")
+    print("--Building cross validation set")
     revs, vocab = build_data_cv(data_folder, cv=10, clean_string=True)
     max_l = np.max(pd.DataFrame(revs)["num_words"])
-    print("data loaded!")
-    print("number of sentences: " + str(len(revs)))
-    print("vocab size: " + str(len(vocab)))
-    print("max sentence length: " + str(max_l))
+    print("--data loaded!")
+    print("---number of sentences: " + str(len(revs)))
+    print("---vocab size: " + str(len(vocab)))
+    print("---max sentence length: " + str(max_l))
     
-    print("loading word2vec vectors...")
+    print("-loading word2vec vectors...")
     w2v = load_bin_vec(w2v_file, vocab)
-    print("word2vec loaded!")
-    print =("num words already in word2vec: " + str(len(w2v)))
+    print("--word2vec loaded!")
+    print =("--num words already in word2vec: " + str(len(w2v)))
     add_unknown_words(w2v, vocab)
     W, word_idx_map = get_W(w2v)
     rand_vecs = {}
     add_unknown_words(rand_vecs, vocab)
     W2, _ = get_W(rand_vecs)
     cPickle.dump([revs, W, W2, word_idx_map, vocab], open("mr.p", "wb"))
-    print("dataset created!")
+    print("-dataset created!")

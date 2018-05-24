@@ -10,3 +10,6 @@ Paper/
 
 # CRNN code
 crnn/
+
+# Google wrod2vec file
+*.bin

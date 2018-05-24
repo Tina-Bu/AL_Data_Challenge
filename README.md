@@ -35,12 +35,29 @@ Switch Keras backend to Theano (How-to: https://keras.io/backend/)
 
 ### Download Google pretrained word2vec file
 
+Download from google drive (1.5 GB)
+
 https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit
+
+Unzip the file
+
+```
+gunzip GoogleNews-vectors-negative300.bin.gz
+```
 
 ### Preprocess data
 
+Clean up strings, create vocabulary with word counts, generate word matrix with word2vec embeddings using Google's pretrained word2vec model.
+
 ```
-python preprocessing.py w2v_bin
+python preprocessing.py GoogleNews-vectors-negative300.bin
 ```
 
-### 
+
+### Run RCNN Model
+
+```
+THEANO_FLAGS=mode=FAST_RUN,device=cuda0,floatX=float32 python sst2_cnn_rnn.py
+
+THEANO_FLAGS=mode=FAST_RUN,device=cuda,floatX=float32 python sst2_cnn_rnn_keras1.py
+```
